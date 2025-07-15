@@ -1,0 +1,82 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #fefefe;
+  padding: 2rem;
+  max-width: 600px;
+  margin: auto;
+  color: #333;
+}
+
+h2 {
+  text-align: center;
+  color: #e91e63;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="file"],
+button {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+button {
+  background-color: #e91e63;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+button:hover {
+  background-color: #c2185b;
+}
+
+p, a {
+  text-align: center;
+}
+
+a {
+  color: #e91e63;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.invoice-card {
+  background: #fff;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.invoice-card p {
+  margin: 0.2rem 0;
+}
+
+.logout {
+  text-align: right;
+  margin-bottom: 1rem;
+}
+.logout button {
+  background-color: #607d8b;
+}
+.logout button:hover {
+  background-color: #455a64;
+}

@@ -127,14 +127,27 @@ DB_USER = "postgres"
 DB_PASSWORD = "Lesson2017890"
 DB_NAME = "[yourname]_invoice_db"
 
-# SQLAlchemy connection to the app's database
+# SQLAlchemy connection string
 SQLALCHEMY_DATABASE_URL = f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+engine = None
+SessionLocal = None
+
+def try_create_session():
+    global engine, SessionLocal
+    try:
+        engine = create_engine(SQLALCHEMY_DATABASE_URL)
+        SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        print("Database connection successful.")
+    except Exception as e:
+        print(f"Error connecting to database with SQLAlchemy: {e}")
 
 db_connection = None
 
 def get_db_connection():
+    return get_db_connection_(DB_NAME)
+
+def get_db_connection_(db_name):
     global db_connection
     try:
         db_connection = psycopg2.connect(
@@ -142,35 +155,37 @@ def get_db_connection():
             port=DB_PORT,
             user=DB_USER,
             password=DB_PASSWORD,
-            dbname=DB_NAME
+            dbname=db_name
         )
         db_connection.autocommit = True
         return db_connection
     except psycopg2.Error as e:
-        print(f"Error connecting to database: {e}")
+        print(f"Error connecting to database '{db_name}': {e}")
         db_connection = None
         return None
 
 def init_db():
-    conn = get_db_connection()
+    conn = get_db_connection_('postgres')  # connect to default 'postgres' DB
     if conn:
         try:
             with conn.cursor() as cursor:
-                cursor.execute("CREATE DATABASE niv_invoice_db;")
-                print("Database initialized successfully.")
+                cursor.execute(f"CREATE DATABASE {DB_NAME};")
+                print(f"Database '{DB_NAME}' initialized successfully.")
                 return True
         except psycopg2.Error as e:
             if "already exists" in str(e):
-                print("Database already exists.")
+                print(f"Database '{DB_NAME}' already exists.")
                 return True
             print(f"Error initializing database: {e}")
             return False
         finally:
-            if conn:
-                conn.close()
+            conn.close()
     return False
-if __name__ == "__main__":
-    init_db()
+    
+try_create_session() 
+if __name__ == "__main__": 
+    init_db()             
+
 ```
 change the DB_NAME to [yourname]_invoice_db
 
@@ -276,8 +291,8 @@ def save_invoice_to_db(data: dict):
 
 edit main.py
 
-
 ```
+from invoice_reader import save_invoice_to_db
 @app.get("/read-invoice-by-url")
 def read_invoice_by_url(url: str = Query(..., description="Direct image URL")):
     try:
@@ -286,6 +301,7 @@ def read_invoice_by_url(url: str = Query(..., description="Direct image URL")):
         return {"status": "saved", "invoice": data}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+        
 ```
 <h3>Save files to s3</h3>
 
@@ -329,16 +345,18 @@ def upload_and_get_presigned_url(file_bytes: bytes, filename: str, content_type:
 
     return key, presigned_url
 
+
 def get_presigned_url_from_key(key: str, expires_in: int = 3600) -> str:
-"""
-Returns a pre-signed URL for a given S3 object key.
-"""
-presigned_url = s3_client.generate_presigned_url(
-    "get_object",
-    Params={"Bucket": S3_BUCKET, "Key": key},
-    ExpiresIn=expires_in
-)
-return presigned_url
+    """
+    Returns a pre-signed URL for a given S3 object key.
+    """
+    presigned_url = s3_client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": S3_BUCKET, "Key": key},
+        ExpiresIn=expires_in
+    )
+    return presigned_url
+
 ```
 
 main.py
@@ -378,7 +396,7 @@ alembic upgrade head
 
 in main.pay add
 ```
-        data["file_key"] = file_key
+        data["file_key"] = key
 ```
 
 <h3>add users and jwt</h3>
@@ -893,8 +911,44 @@ templates/upload_invoice.html
 
 ```
 
+main.py
 
+```
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import Request
+from fastapi.responses import HTMLResponse
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+@app.get("/")
+def root():
+    return RedirectResponse(url="/signup-form")
+
+@app.get("/signup-form")
+def signup_form(request: Request):
+    return templates.TemplateResponse("signup.html", {"request": request})
+
+@app.get("/login-form")
+def login_form(request: Request):
+    return templates.TemplateResponse("login.html", {"request": request})
+
+@app.get("/upload-invoice-form")
+def upload_invoice_form(request: Request):
+    return templates.TemplateResponse("upload_invoice.html", {"request": request})
+
+@app.get("/my-invoices", response_class=HTMLResponse)
+def my_invoices_page(
+    request: Request
+):
+    return templates.TemplateResponse("my_invoices.html", {"request": request})
+
+```
+
+ 
 <h3>Add the project to your github</h3>
 use the replit Github tab
 
