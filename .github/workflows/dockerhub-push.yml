@@ -1,0 +1,27 @@
+name: Build and Push Docker Image
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
+        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USER }}" --password-stdin
+
+      - name: Build Docker image with build number tag
+        run: |
+          IMAGE_TAG=${{ github.run_number }}
+          docker build -t ${{ secrets.DOCKERHUB_USER }}/invoice-app:$IMAGE_TAG .
+
+      - name: Push Docker image
+        run: |
+          IMAGE_TAG=${{ github.run_number }}
+          docker push ${{ secrets.DOCKERHUB_USER }}/invoice-app:$IMAGE_TAG
